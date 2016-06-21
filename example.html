@@ -6,10 +6,10 @@
         <script type="text/javascript" src="states.js"></script>
     </head>
     <body>
-        This is a dropdown:
+        This one has a drop down:
         <div id="myDropdown" style="width:200px"></div>
         <div style="height:250px"></div>
-        This one has a drop up:
+        And this one has a drop up:
         <div id="myDropup" style="width:300px"></div>
         <script type="text/javascript">
             (function () {
@@ -20,17 +20,17 @@
                     selected: states[23],
                     label: 'name',
                     onSelect: function (selection) {
-                        console.log('You selected:', selection);
+                        console.log('In the drop down, you selected:', selection);
                     }
                 });
                 dropdown({
                     container: 'myDropup',
                     up: true,
                     options: states,
-                    selected: states[23],
+                    selected: states[34],
                     label: 'name',
                     onSelect: function (selection) {
-                        console.log('You selected:', selection);
+                        console.log('In the drop up, you selected:', selection);
                     }
                 });
             })();
