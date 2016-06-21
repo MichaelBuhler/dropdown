@@ -1,6 +1,7 @@
 function dropdown(settings) {
 
     var container = ( typeof settings.container === 'string' ) ? document.getElementById(settings.container) : settings.container;
+    container.innerHTML = '';
     addClass(container, 'dropdown');
 
     var field = document.createElement('input');
@@ -70,6 +71,9 @@ function dropdown(settings) {
     field.addEventListener('keyup', function (e) {
         if ( e.keyCode === 13 ) {
             if ( options.style.display === 'block' ) select(highlighted);
+        } else if ( e.keyCode === 27 ) {
+            setSelection(selected);
+            hide();
         } else if ( e.keyCode === 38 ) {
             if ( highlightIndex > 0 ) highlightIndex--;
             show();
