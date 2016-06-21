@@ -13,9 +13,12 @@
         <div id="myDropup" style="width:300px"></div>
         <script type="text/javascript">
             (function () {
+
                 var states = getStates();
+
                 dropdown({
                     container: 'myDropdown',
+                    placeholder: 'Type to filter...',
                     options: states,
                     selected: states[23],
                     label: 'name',
@@ -23,8 +26,10 @@
                         console.log('In the drop down, you selected:', selection);
                     }
                 });
+
                 dropdown({
                     container: 'myDropup',
+                    placeholder: 'Type to filter...',
                     up: true,
                     options: states,
                     selected: states[34],
@@ -33,6 +38,7 @@
                         console.log('In the drop up, you selected:', selection);
                     }
                 });
+
             })();
         </script>
     </body>

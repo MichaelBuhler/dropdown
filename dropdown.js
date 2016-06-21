@@ -5,6 +5,7 @@ function dropdown(settings) {
 
     var field = document.createElement('input');
     field.className = 'field';
+    field.placeholder = settings.placeholder;
     container.appendChild(field);
     var options = document.createElement('div');
     options.id = 'options';
@@ -16,43 +17,72 @@ function dropdown(settings) {
     var visibleCount = 0;
     var highlightIndex = 0;
     var highlighted = null;
+    var selected = null;
 
+    var none = document.createElement('div');
+    none.innerHTML = '- No Selection -';
+    none.className = 'option disabled';
+    var nothing = {
+        obj: null,
+        div: none
+    };
+    none.addEventListener('click', function () {
+        select(nothing);
+    });
+    options.appendChild(none);
+    
     settings.options.forEach(function (option) {
         var div = document.createElement('div');
         div.innerHTML = option[settings.label];
         div.className = 'option';
-        div.addEventListener('click', function () {
-            select(option);
-        });
-        options.appendChild(div);
-        opts.push({
+        var opt = {
             obj: option,
             div: div
-        })
+        };
+        div.addEventListener('click', function () {
+            select(opt);
+        });
+        options.appendChild(div);
+        opts.push(opt);
     });
 
+    var empty = document.createElement('div');
+    empty.innerHTML = '- No Results -';
+    empty.className = 'option disabled';
+    empty.style.display = 'none';
+    empty.style.cursor = 'default';
+    options.appendChild(empty);
 
-
-    field.addEventListener('blur', function () { if (!selecting) hide(); });
+    field.addEventListener('blur', function () {
+        if (!selecting) {
+            hide();
+            if (selected) field.value = selected.obj[settings.label];
+        }
+    });
 
     options.addEventListener('mousedown', function () { selecting = true; });
 
     options.addEventListener('mouseup', function () { selecting = false; });
 
     field.addEventListener('keyup', function (e) {
-        if ( e.keyCode === 9) {
-            return;
-        } else if ( e.keyCode === 13 ) {
-            select(highlighted);
-            return;
+        if ( e.keyCode === 13 ) {
+            if ( options.style.display === 'block' ) select(highlighted);
         } else if ( e.keyCode === 38 ) {
             if ( highlightIndex > 0 ) highlightIndex--;
+            show();
+            if ( highlighted && highlighted.div.offsetTop - options.scrollTop < options.clientHeight / 4 ) {
+                options.scrollTop = highlighted.div.offsetTop - options.clientHeight / 4;
+            }
         } else if ( e.keyCode === 40 ) {
             if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
-        } else {
+            show();
+            if ( highlighted && highlighted.div.offsetTop > options.clientHeight * 3 / 4 ) {
+                options.scrollTop = highlighted.div.offsetTop - options.clientHeight * 3 / 4;
+            }
+        } else if ( e.keyCode !== 9 ) {
             highlightIndex = 0;
+            show();
         }
-        show();
     });
 
     function show () { options.style.display = 'block'; render();  }
@@ -61,10 +91,22 @@ function dropdown(settings) {
 
     function render () {
         visibleCount = 0;
+
+        removeClass(none, 'highlight');
+        if ( field.value === '' ) {
+            none.style.display = 'block';
+            if ( visibleCount++ === highlightIndex ) {
+                addClass(none, 'highlight');
+                highlighted = nothing;
+            }
+        } else {
+            none.style.display = 'none';
+        }
+
         var regexes = [];
         field.value.split(' ').forEach(function (word) {
             var alphanumeric = word.match(/[0-9a-z]/gi);
-            if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'),'i'));
+            if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'), 'i'));
         });
 
         opts.forEach(function (opt) {
@@ -77,12 +119,14 @@ function dropdown(settings) {
                 opt.div.style.display = 'block';
                 if ( visibleCount++ === highlightIndex ) {
                     addClass(opt.div, 'highlight');
-                    highlighted = opt.obj;
+                    highlighted = opt;
                 }
             } else {
                 opt.div.style.display = 'none';
             }
         });
+
+        empty.style.display = ( visibleCount === 0 ) ? 'block' :'none';
 
         if (settings.up) {
             options.style.top = '-' + ( options.clientHeight + 3 ) + 'px';
@@ -92,8 +136,9 @@ function dropdown(settings) {
     }
 
     function select (selection) {
-        field.value = selection[settings.label];
-        if (settings.onSelect) settings.onSelect(selection);
+        selected = selection;
+        if (selected.obj) field.value = selected.obj[settings.label];
+        if (settings.onSelect) settings.onSelect(selected.obj);
         hide();
     }
 
