@@ -1,6 +1,6 @@
 function dropdown(settings) {
 
-    var container = document.getElementById(settings.container);
+    var container = ( typeof settings.container === 'string' ) ? document.getElementById(settings.container) : settings.container;
     addClass(container, 'dropdown');
 
     var field = document.createElement('input');
@@ -30,7 +30,7 @@ function dropdown(settings) {
         select(nothing);
     });
     options.appendChild(none);
-    
+
     settings.options.forEach(function (option) {
         var div = document.createElement('div');
         div.innerHTML = option[settings.label];
@@ -44,6 +44,9 @@ function dropdown(settings) {
         });
         options.appendChild(div);
         opts.push(opt);
+        if ( option === settings.selected ) {
+            setSelection(opt);
+        }
     });
 
     var empty = document.createElement('div');
@@ -56,7 +59,7 @@ function dropdown(settings) {
     field.addEventListener('blur', function () {
         if (!selecting) {
             hide();
-            if (selected) field.value = selected.obj[settings.label];
+            setSelection(selected);
         }
     });
 
@@ -135,10 +138,14 @@ function dropdown(settings) {
         }
     }
 
-    function select (selection) {
+    function setSelection (selection) {
         selected = selection;
-        if (selected.obj) field.value = selected.obj[settings.label];
-        if (settings.onSelect) settings.onSelect(selected.obj);
+        field.value = (selected && selected.obj) ? selected.obj[settings.label] : '';
+    }
+
+    function select (selection) {
+        setSelection(selection);
+        if (settings.onSelect) settings.onSelect(selection.obj);
         hide();
     }
 
@@ -169,4 +176,5 @@ function dropdown(settings) {
         });
         element.className = newClassNames.join(' ');
     }
+
 }
