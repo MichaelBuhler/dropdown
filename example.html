@@ -1,16 +1,31 @@
 <html>
     <head>
         <title>Dropdown Example</title>
+        <link rel="stylesheet" type="text/css" href="dropdown.css"/>
         <script type="text/javascript" src="dropdown.js"></script>
         <script type="text/javascript" src="states.js"></script>
     </head>
     <body>
-        <div id="myDropdown"></div>
+        This is a dropdown:
+        <div id="myDropdown" style="width:200px"></div>
+        <div style="height:250px"></div>
+        This one has a drop up:
+        <div id="myDropup" style="width:300px"></div>
         <script type="text/javascript">
             (function () {
                 var states = getStates();
                 dropdown({
                     container: 'myDropdown',
+                    options: states,
+                    selected: states[23],
+                    label: 'name',
+                    onSelect: function (selection) {
+                        console.log('You selected:', selection);
+                    }
+                });
+                dropdown({
+                    container: 'myDropup',
+                    up: true,
                     options: states,
                     selected: states[23],
                     label: 'name',
