@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <title>Dropdown Example</title>
+        <script type="text/javascript" src="dropdown.js"></script>
+        <script type="text/javascript" src="states.js"></script>
+    </head>
+    <body>
+        <div id="myDropdown"></div>
+        <script type="text/javascript">
+            (function () {
+                var states = getStates();
+                dropdown({
+                    container: 'myDropdown',
+                    options: states,
+                    selected: states[23],
+                    label: 'name',
+                    onSelect: function (selection) {
+                        console.log('You selected:', selection);
+                    }
+                });
+            })();
+        </script>
+    </body>
+</html>
