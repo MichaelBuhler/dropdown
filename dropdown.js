@@ -116,9 +116,7 @@ function dropdown(settings) {
             removeClass(opt.div, 'highlight');
             if (settings.highlight) opt = unHighlightSubstring(opt);
             if (
-                regexes.every(function (regex) {
-                    return regex.test(opt.obj[settings.label]);
-                })
+                opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
             ) {
                 if (settings.highlight) opt = highlightSubstring(opt, field.value);
                 opt.div.style.display = 'block';
