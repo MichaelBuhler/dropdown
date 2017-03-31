@@ -119,9 +119,7 @@ function dropdown(settings) {
         opts.forEach(function (opt) {
             removeClass(opt.div, 'highlight');
             if (
-                regexes.every(function (regex) {
-                    return regex.test(opt.obj[settings.label]);
-                })
+                opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
             ) {
                 opt.div.style.display = 'block';
                 if ( visibleCount++ === highlightIndex ) {
