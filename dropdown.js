@@ -45,7 +45,7 @@ function dropdown(settings) {
         });
         options.appendChild(div);
         opts.push(opt);
-        if ( option === settings.selected ) {
+        if ( JSON.stringify(option) === JSON.stringify(settings.selected) ) {
             setSelection(opt);
         }
     });
