@@ -33,6 +33,7 @@ you may be using.
 
     dropdown({
         container: 'myDropdown',           // The `id` of an element to render to
+        placeholder: 'Type to filter...',  // The placeholder of text input
         options: myOptions,                // An array of selectable objects
         selected: myOptions[6],            // One of those object to be initially selected
         label: 'name',                     // Which option field to show and filter on
