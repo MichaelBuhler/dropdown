@@ -12,6 +12,8 @@ function dropdown(settings) {
     options.id = 'options';
     options.className = 'options';
     container.appendChild(options);
+    
+    settings.min = settings.min || 1;
 
     var opts = [];
     var selecting = false;
@@ -92,7 +94,13 @@ function dropdown(settings) {
         }
     });
 
-    function show () { options.style.display = 'block'; render();  }
+    function show () {
+		if(field.value.length >= settings.min){
+			options.style.display = 'block'; render();
+		}else{
+			hide();
+		}
+	}
 
     function hide () { options.style.display = 'none'; }
 
