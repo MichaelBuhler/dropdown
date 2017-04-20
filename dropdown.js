@@ -12,6 +12,8 @@ function dropdown(settings) {
     options.id = 'options';
     options.className = 'options';
     container.appendChild(options);
+    
+    settings.highlight = settings.highlight || false;
 
     var opts = [];
     var selecting = false;
@@ -110,17 +112,13 @@ function dropdown(settings) {
             none.style.display = 'none';
         }
 
-        var regexes = [];
-        field.value.split(' ').forEach(function (word) {
-            var alphanumeric = word.match(/[0-9a-z]/gi);
-            if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'), 'i'));
-        });
-
         opts.forEach(function (opt) {
             removeClass(opt.div, 'highlight');
+            if (settings.highlight) opt = unHighlightSubstring(opt);
             if (
                 opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
             ) {
+                if (settings.highlight) opt = highlightSubstring(opt, field.value);
                 opt.div.style.display = 'block';
                 if ( visibleCount++ === highlightIndex ) {
                     addClass(opt.div, 'highlight');
@@ -178,5 +176,15 @@ function dropdown(settings) {
         });
         element.className = newClassNames.join(' ');
     }
+    
+    function highlightSubstring(o, str){
+		o.div.innerHTML = o.div.innerHTML.replace(new RegExp('(' + str + '+)', 'gi'), '<b>$1</b>');
+		return o;
+	}
+    
+    function unHighlightSubstring(o){
+		o.div.innerHTML = o.div.textContent || o.div.innerText || '';
+		return o;
+	}
 
 }
