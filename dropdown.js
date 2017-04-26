@@ -5,15 +5,14 @@ function dropdown(settings) {
 	addClass(container, 'dropdown');
 
 	var field = document.createElement('input');
-	field.className = 'form-control';
+	field.className = 'field';
 	field.placeholder = settings.placeholder || 'Type to filter...';
 	container.appendChild(field);
 	var options = document.createElement('div');
 	options.id = 'options';
 	options.className = 'options';
 	container.appendChild(options);
-
-	settings.highlight = settings.highlight || false;
+	
 	settings.min = settings.min || 1;
 
 	var opts = [];
@@ -48,7 +47,7 @@ function dropdown(settings) {
 		});
 		options.appendChild(div);
 		opts.push(opt);
-		if ( JSON.stringify(option) === JSON.stringify(settings.selected) ) {
+		if ( option === settings.selected ) {
 			setSelection(opt);
 		}
 	});
@@ -119,13 +118,19 @@ function dropdown(settings) {
 			none.style.display = 'none';
 		}
 
+		var regexes = [];
+		field.value.split(' ').forEach(function (word) {
+			var alphanumeric = word.match(/[0-9a-z]/gi);
+			if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'), 'i'));
+		});
+
 		opts.forEach(function (opt) {
 			removeClass(opt.div, 'highlight');
-			if (settings.highlight) opt = unHighlightSubstring(opt);
 			if (
-				opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
+				regexes.every(function (regex) {
+					return regex.test(opt.obj[settings.label]);
+				})
 			) {
-				if (settings.highlight) opt = highlightSubstring(opt, field.value);
 				opt.div.style.display = 'block';
 				if ( visibleCount++ === highlightIndex ) {
 					addClass(opt.div, 'highlight');
@@ -182,16 +187,6 @@ function dropdown(settings) {
 			if ( oldClassName !== clazz ) newClassNames.push(oldClassName);
 		});
 		element.className = newClassNames.join(' ');
-	}
-
-	function highlightSubstring(o, str){
-		o.div.innerHTML = o.div.innerHTML.replace(new RegExp('(' + str + '+)', 'gi'), '<b>$1</b>');
-		return o;
-	}
-
-	function unHighlightSubstring(o){
-		o.div.innerHTML = o.div.textContent || o.div.innerText || '';
-		return o;
 	}
 
 }
