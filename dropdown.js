@@ -14,6 +14,7 @@ function dropdown(settings) {
 	container.appendChild(options);
 
 	settings.min = settings.min || 1;
+	settings.delay = settings.delay || 150;
 
 	var opts = [];
 	var selecting = false;
@@ -21,6 +22,7 @@ function dropdown(settings) {
 	var highlightIndex = 0;
 	var highlighted = null;
 	var selected = null;
+	var delayTimer;
 
 	var none = document.createElement('div');
 	none.innerHTML = '- No Selection -';
@@ -36,7 +38,6 @@ function dropdown(settings) {
 
 	if(settings.remote !== undefined){
 		settings.remote.url = settings.remote.url || '/';
-		settings.remote.delay = settings.remote.delay || 150;
 		settings.remote.q = settings.remote.q || 'q';
 	}
 
@@ -96,9 +97,9 @@ function dropdown(settings) {
 				if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
 				break;
 			default:
-				if ( e.keyCode !== 9 ) { // tab
+				if ( e.keyCode === 8 || e.keyCode === 32 || e.keyCode > 46 ) {
 					highlightIndex = 0;
-					performSearch(show);
+					show();
 				}
 				break;
 		}
@@ -106,44 +107,48 @@ function dropdown(settings) {
 
 	function performSearch(callback) {
 		if(settings.remote !== undefined){
+			resetOptionsList();
 			performRemoteSearch(callback);
 		}else{
 			callback();
 		}
 	}
 
+	var request = new XMLHttpRequest();
+
 	function performRemoteSearch(callback){
-		if(typeof superagent === 'function'){
-			superagent
-				.get(settings.remote.url + '?' + settings.remote.q + '=')
-				//.set('Authentication', 'Basic Z2FnOmNhbG9nZ2Vybw==')
-				.end(function(err, res){
+		request.abort();
 
-					if(err){
-						console.error(err);
-						alert('Si sono verificati errori di connessione.');
-					}else{
+		request.open('GET', settings.remote.url + '?' + settings.remote.q + '=' + field.value.toLowerCase(), true);
 
-						if(res.type == 'text/html'){
-							res.body = JSON.parse(res.text);
-						}
+		request.onload = function() {
+			if (request.status >= 200 && request.status < 400) {
+				var data = JSON.parse(request.responseText);
 
-						console.log(res.body);
+				data.forEach(prepareOption);
 
-						data = res.body.home_recent.items;
+				callback();
+			} else {
+				console.error('Connection error.');
+			}
+		};
 
-						[].slice.call(RecentStories.getElementsByClassName('row')).forEach(renderSection);
+		request.onerror = function() {
+			console.error('Connection error.');
+		};
 
-					}
-
-				});
-		}
+		request.send();
 	}
 
 	function show () {
 		if(field.value.length >= settings.min){
 			options.style.display = 'block';
-			render();
+
+			clearTimeout(delayTimer);
+
+			delayTimer = setTimeout(function() {
+				performSearch(render);
+			}, settings.delay);
 		}else{
 			hide();
 		}
@@ -199,6 +204,18 @@ function dropdown(settings) {
 	function unHighlightSubstring(o){
 		o.div.innerHTML = o.div.textContent || o.div.innerText || '';
 		return o;
+	}
+
+	function resetOptionsList(){
+		var _opts = [].slice.call(options.getElementsByClassName('option'));
+
+		if(_opts.length > 1){
+			_opts.shift();
+
+			_opts.forEach(function(el, i){
+				el.parentNode.removeChild(el);
+			});
+		}
 	}
 
 	function setSelection (selection) {
