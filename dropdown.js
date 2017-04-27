@@ -34,7 +34,13 @@ function dropdown(settings) {
 	});
 	options.appendChild(none);
 
-	settings.options.forEach(prepareOption);
+	if(settings.remote !== undefined){
+		settings.remote.url = settings.remote.url || '/';
+		settings.remote.delay = settings.remote.delay || 150;
+		settings.remote.q = settings.remote.q || 'q';
+	}
+
+	if(settings.options !== undefined && settings.options.length) settings.options.forEach(prepareOption);
 
 	var empty = document.createElement('div');
 	empty.innerHTML = '- No Results -';
@@ -69,38 +75,75 @@ function dropdown(settings) {
 		});
 		options.appendChild(div);
 		opts.push(opt);
-		if ( option === settings.selected ) {
+		if ( JSON.stringify(option) === JSON.stringify(settings.selected) ) {
 			setSelection(opt);
 		}
 	}
 
 	function onKeyUp(e){
 		switch(e.keyCode){
-			case 13:
+			case 13: // enter
 				if ( options.style.display === 'block' ) select(highlighted);
 				break;
-			case 27:
+			case 27: // esc
 				setSelection(selected);
 				hide();
 				break;
-			case 38:
+			case 38: // up arrow
 				if ( highlightIndex > 0 ) highlightIndex--;
 				break;
-			case 40:
+			case 40: // down arrow
 				if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
 				break;
 			default:
-				if ( e.keyCode !== 9 ) {
+				if ( e.keyCode !== 9 ) { // tab
 					highlightIndex = 0;
-					show();
+					performSearch(show);
 				}
 				break;
 		}
 	}
 
+	function performSearch(callback) {
+		if(settings.remote !== undefined){
+			performRemoteSearch(callback);
+		}else{
+			callback();
+		}
+	}
+
+	function performRemoteSearch(callback){
+		if(typeof superagent === 'function'){
+			superagent
+				.get(settings.remote.url + '?' + settings.remote.q + '=')
+				//.set('Authentication', 'Basic Z2FnOmNhbG9nZ2Vybw==')
+				.end(function(err, res){
+
+					if(err){
+						console.error(err);
+						alert('Si sono verificati errori di connessione.');
+					}else{
+
+						if(res.type == 'text/html'){
+							res.body = JSON.parse(res.text);
+						}
+
+						console.log(res.body);
+
+						data = res.body.home_recent.items;
+
+						[].slice.call(RecentStories.getElementsByClassName('row')).forEach(renderSection);
+
+					}
+
+				});
+		}
+	}
+
 	function show () {
 		if(field.value.length >= settings.min){
-			options.style.display = 'block'; render();
+			options.style.display = 'block';
+			render();
 		}else{
 			hide();
 		}
@@ -122,19 +165,13 @@ function dropdown(settings) {
 			none.style.display = 'none';
 		}
 
-		var regexes = [];
-		field.value.split(' ').forEach(function (word) {
-			var alphanumeric = word.match(/[0-9a-z]/gi);
-			if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'), 'i'));
-		});
-
 		opts.forEach(function (opt) {
 			removeClass(opt.div, 'highlight');
+			if (settings.highlight) opt = unHighlightSubstring(opt);
 			if (
-				regexes.every(function (regex) {
-					return regex.test(opt.obj[settings.label]);
-				})
+				opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
 			) {
+				if (settings.highlight) opt = highlightSubstring(opt, field.value);
 				opt.div.style.display = 'block';
 				if ( visibleCount++ === highlightIndex ) {
 					addClass(opt.div, 'highlight');
@@ -152,6 +189,16 @@ function dropdown(settings) {
 		} else {
 			options.style.top = ( field.clientHeight + 1 ) + 'px';
 		}
+	}
+
+	function highlightSubstring(o, str){
+		o.div.innerHTML = o.div.innerHTML.replace(new RegExp('(' + str + '+)', 'gi'), '<b>$1</b>');
+		return o;
+	}
+
+	function unHighlightSubstring(o){
+		o.div.innerHTML = o.div.textContent || o.div.innerText || '';
+		return o;
 	}
 
 	function setSelection (selection) {
