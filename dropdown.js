@@ -12,8 +12,9 @@ function dropdown(settings) {
 	options.id = 'options';
 	options.className = 'options';
 	container.appendChild(options);
-	
+
 	settings.min = settings.min || 1;
+	settings.delay = settings.delay || 150;
 
 	var opts = [];
 	var selecting = false;
@@ -21,6 +22,7 @@ function dropdown(settings) {
 	var highlightIndex = 0;
 	var highlighted = null;
 	var selected = null;
+	var delayTimer;
 
 	var none = document.createElement('div');
 	none.innerHTML = '- No Selection -';
@@ -34,23 +36,12 @@ function dropdown(settings) {
 	});
 	options.appendChild(none);
 
-	settings.options.forEach(function (option) {
-		var div = document.createElement('div');
-		div.innerHTML = option[settings.label];
-		div.className = 'option';
-		var opt = {
-			obj: option,
-			div: div
-		};
-		div.addEventListener('click', function () {
-			select(opt);
-		});
-		options.appendChild(div);
-		opts.push(opt);
-		if ( option === settings.selected ) {
-			setSelection(opt);
-		}
-	});
+	if(settings.remote !== undefined){
+		settings.remote.url = settings.remote.url || '/';
+		settings.remote.q = settings.remote.q || 'q';
+	}
+
+	if(settings.options !== undefined && settings.options.length) settings.options.forEach(prepareOption);
 
 	var empty = document.createElement('div');
 	empty.innerHTML = '- No Results -';
@@ -70,33 +61,94 @@ function dropdown(settings) {
 
 	options.addEventListener('mouseup', function () { selecting = false; });
 
-	field.addEventListener('keyup', function (e) {
-		if ( e.keyCode === 13 ) {
-			if ( options.style.display === 'block' ) select(highlighted);
-		} else if ( e.keyCode === 27 ) {
-			setSelection(selected);
-			hide();
-		} else if ( e.keyCode === 38 ) {
-			if ( highlightIndex > 0 ) highlightIndex--;
-			show();
-			if ( highlighted && highlighted.div.offsetTop - options.scrollTop < options.clientHeight / 4 ) {
-				options.scrollTop = highlighted.div.offsetTop - options.clientHeight / 4;
-			}
-		} else if ( e.keyCode === 40 ) {
-			if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
-			show();
-			if ( highlighted && highlighted.div.offsetTop > options.clientHeight * 3 / 4 ) {
-				options.scrollTop = highlighted.div.offsetTop - options.clientHeight * 3 / 4;
-			}
-		} else if ( e.keyCode !== 9 ) {
-			highlightIndex = 0;
-			show();
+	field.addEventListener('keyup', onKeyUp);
+
+	function prepareOption(option){
+		var div = document.createElement('div');
+		div.innerHTML = option[settings.label];
+		div.className = 'option';
+		var opt = {
+			obj: option,
+			div: div
+		};
+		div.addEventListener('click', function () {
+			select(opt);
+		});
+		options.appendChild(div);
+		opts.push(opt);
+		if ( JSON.stringify(option) === JSON.stringify(settings.selected) ) {
+			setSelection(opt);
 		}
-	});
+	}
+
+	function onKeyUp(e){
+		switch(e.keyCode){
+			case 13: // enter
+				if ( options.style.display === 'block' ) select(highlighted);
+				break;
+			case 27: // esc
+				setSelection(selected);
+				hide();
+				break;
+			case 38: // up arrow
+				if ( highlightIndex > 0 ) highlightIndex--;
+				break;
+			case 40: // down arrow
+				if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
+				break;
+			default:
+				if ( e.keyCode === 8 || e.keyCode === 32 || e.keyCode > 46 ) {
+					highlightIndex = 0;
+					show();
+				}
+				break;
+		}
+	}
+
+	function performSearch(callback) {
+		if(settings.remote !== undefined){
+			resetOptionsList();
+			performRemoteSearch(callback);
+		}else{
+			callback();
+		}
+	}
+
+	var request = new XMLHttpRequest();
+
+	function performRemoteSearch(callback){
+		request.abort();
+
+		request.open('GET', settings.remote.url + '?' + settings.remote.q + '=' + field.value.toLowerCase(), true);
+
+		request.onload = function() {
+			if (request.status >= 200 && request.status < 400) {
+				var data = JSON.parse(request.responseText);
+
+				data.forEach(prepareOption);
+
+				callback();
+			} else {
+				console.error('Connection error.');
+			}
+		};
+
+		request.onerror = function() {
+			console.error('Connection error.');
+		};
+
+		request.send();
+	}
 
 	function show () {
 		if(field.value.length >= settings.min){
-			options.style.display = 'block'; render();
+			options.style.display = 'block';
+
+			clearTimeout(delayTimer);
+
+			delayTimer = setTimeout(function() {
+				performSearch(render);
+			}, settings.delay);
 		}else{
 			hide();
 		}
@@ -118,19 +170,13 @@ function dropdown(settings) {
 			none.style.display = 'none';
 		}
 
-		var regexes = [];
-		field.value.split(' ').forEach(function (word) {
-			var alphanumeric = word.match(/[0-9a-z]/gi);
-			if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'), 'i'));
-		});
-
 		opts.forEach(function (opt) {
 			removeClass(opt.div, 'highlight');
+			if (settings.highlight) opt = unHighlightSubstring(opt);
 			if (
-				regexes.every(function (regex) {
-					return regex.test(opt.obj[settings.label]);
-				})
+				opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
 			) {
+				if (settings.highlight) opt = highlightSubstring(opt, field.value);
 				opt.div.style.display = 'block';
 				if ( visibleCount++ === highlightIndex ) {
 					addClass(opt.div, 'highlight');
@@ -150,6 +196,28 @@ function dropdown(settings) {
 		}
 	}
 
+	function highlightSubstring(o, str){
+		o.div.innerHTML = o.div.innerHTML.replace(new RegExp('(' + str + '+)', 'gi'), '<b>$1</b>');
+		return o;
+	}
+
+	function unHighlightSubstring(o){
+		o.div.innerHTML = o.div.textContent || o.div.innerText || '';
+		return o;
+	}
+
+	function resetOptionsList(){
+		var _opts = [].slice.call(options.getElementsByClassName('option'));
+
+		if(_opts.length > 1){
+			_opts.shift();
+
+			_opts.forEach(function(el, i){
+				el.parentNode.removeChild(el);
+			});
+		}
+	}
+
 	function setSelection (selection) {
 		selected = selection;
 		field.value = (selected && selected.obj) ? selected.obj[settings.label] : '';
@@ -161,32 +229,12 @@ function dropdown(settings) {
 		hide();
 	}
 
-	function unique (classes) {
-		var newClasses = [];
-		classes.forEach(function (oldVal) {
-			if (
-				oldVal !== '' &&
-				!newClasses.some(function (newVal) { return newVal === oldVal; })
-			) {
-				newClasses.push(oldVal);
-			}
-		});
-		return newClasses;
-	}
-
 	function addClass (element, clazz) {
-		var classes = element.className.split(' ');
-		classes.push(clazz);
-		element.className = unique(classes).join(' ');
+		element.classList.add(clazz);
 	}
 
 	function removeClass (element, clazz) {
-		var oldClassNames = element.className.split(' ');
-		var newClassNames = [];
-		oldClassNames.forEach(function (oldClassName) {
-			if ( oldClassName !== clazz ) newClassNames.push(oldClassName);
-		});
-		element.className = newClassNames.join(' ');
+		element.classList.remove(clazz);
 	}
 
 }
