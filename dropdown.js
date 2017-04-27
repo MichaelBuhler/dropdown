@@ -12,7 +12,7 @@ function dropdown(settings) {
 	options.id = 'options';
 	options.className = 'options';
 	container.appendChild(options);
-	
+
 	settings.min = settings.min || 1;
 
 	var opts = [];
@@ -34,23 +34,7 @@ function dropdown(settings) {
 	});
 	options.appendChild(none);
 
-	settings.options.forEach(function (option) {
-		var div = document.createElement('div');
-		div.innerHTML = option[settings.label];
-		div.className = 'option';
-		var opt = {
-			obj: option,
-			div: div
-		};
-		div.addEventListener('click', function () {
-			select(opt);
-		});
-		options.appendChild(div);
-		opts.push(opt);
-		if ( option === settings.selected ) {
-			setSelection(opt);
-		}
-	});
+	settings.options.forEach(prepareOption);
 
 	var empty = document.createElement('div');
 	empty.innerHTML = '- No Results -';
@@ -70,29 +54,49 @@ function dropdown(settings) {
 
 	options.addEventListener('mouseup', function () { selecting = false; });
 
-	field.addEventListener('keyup', function (e) {
-		if ( e.keyCode === 13 ) {
-			if ( options.style.display === 'block' ) select(highlighted);
-		} else if ( e.keyCode === 27 ) {
-			setSelection(selected);
-			hide();
-		} else if ( e.keyCode === 38 ) {
-			if ( highlightIndex > 0 ) highlightIndex--;
-			show();
-			if ( highlighted && highlighted.div.offsetTop - options.scrollTop < options.clientHeight / 4 ) {
-				options.scrollTop = highlighted.div.offsetTop - options.clientHeight / 4;
-			}
-		} else if ( e.keyCode === 40 ) {
-			if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
-			show();
-			if ( highlighted && highlighted.div.offsetTop > options.clientHeight * 3 / 4 ) {
-				options.scrollTop = highlighted.div.offsetTop - options.clientHeight * 3 / 4;
-			}
-		} else if ( e.keyCode !== 9 ) {
-			highlightIndex = 0;
-			show();
+	field.addEventListener('keyup', onKeyUp);
+
+	function prepareOption(option){
+		var div = document.createElement('div');
+		div.innerHTML = option[settings.label];
+		div.className = 'option';
+		var opt = {
+			obj: option,
+			div: div
+		};
+		div.addEventListener('click', function () {
+			select(opt);
+		});
+		options.appendChild(div);
+		opts.push(opt);
+		if ( option === settings.selected ) {
+			setSelection(opt);
 		}
-	});
+	}
+
+	function onKeyUp(e){
+		switch(e.keyCode){
+			case 13:
+				if ( options.style.display === 'block' ) select(highlighted);
+				break;
+			case 27:
+				setSelection(selected);
+				hide();
+				break;
+			case 38:
+				if ( highlightIndex > 0 ) highlightIndex--;
+				break;
+			case 40:
+				if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
+				break;
+			default:
+				if ( e.keyCode !== 9 ) {
+					highlightIndex = 0;
+					show();
+				}
+				break;
+		}
+	}
 
 	function show () {
 		if(field.value.length >= settings.min){
