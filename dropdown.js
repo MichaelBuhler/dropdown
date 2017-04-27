@@ -165,32 +165,12 @@ function dropdown(settings) {
 		hide();
 	}
 
-	function unique (classes) {
-		var newClasses = [];
-		classes.forEach(function (oldVal) {
-			if (
-				oldVal !== '' &&
-				!newClasses.some(function (newVal) { return newVal === oldVal; })
-			) {
-				newClasses.push(oldVal);
-			}
-		});
-		return newClasses;
-	}
-
 	function addClass (element, clazz) {
-		var classes = element.className.split(' ');
-		classes.push(clazz);
-		element.className = unique(classes).join(' ');
+		element.classList.add(clazz);
 	}
 
 	function removeClass (element, clazz) {
-		var oldClassNames = element.className.split(' ');
-		var newClassNames = [];
-		oldClassNames.forEach(function (oldClassName) {
-			if ( oldClassName !== clazz ) newClassNames.push(oldClassName);
-		});
-		element.className = newClassNames.join(' ');
+		element.classList.remove(clazz);
 	}
 
 }
