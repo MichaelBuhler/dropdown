@@ -5,7 +5,7 @@ function dropdown(settings) {
 	addClass(container, 'dropdown');
 
 	var field = document.createElement('input');
-	field.className = 'field';
+	field.className = settings.classname || 'field';
 	field.placeholder = settings.placeholder || 'Type to filter...';
 	container.appendChild(field);
 	var options = document.createElement('div');
