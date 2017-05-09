@@ -1,184 +1,257 @@
 function dropdown(settings) {
 
-    var container = ( typeof settings.container === 'string' ) ? document.getElementById(settings.container) : settings.container;
-    container.innerHTML = '';
-    addClass(container, 'dropdown');
+	var container = ( typeof settings.container === 'string' ) ? document.getElementById(settings.container) : settings.container;
+	container.innerHTML = '';
+	addClass(container, 'dropdown');
 
-    var field = document.createElement('input');
-    field.className = 'field';
-    field.placeholder = settings.placeholder || 'Type to filter...';
-    container.appendChild(field);
-    var options = document.createElement('div');
-    options.id = 'options';
-    options.className = 'options';
-    container.appendChild(options);
+	var field = document.createElement('input');
+	field.className = settings.classname || 'field';
+	field.placeholder = settings.placeholder || 'Type to filter...';
+	container.appendChild(field);
+	var options = document.createElement('div');
+	options.id = 'options';
+	options.className = 'options';
+	container.appendChild(options);
 
-    var opts = [];
-    var selecting = false;
-    var visibleCount = 0;
-    var highlightIndex = 0;
-    var highlighted = null;
-    var selected = null;
+	settings.min = settings.min || 1;
+	settings.delay = settings.delay || 150;
 
-    var none = document.createElement('div');
-    none.innerHTML = '- No Selection -';
-    none.className = 'option disabled';
-    var nothing = {
-        obj: null,
-        div: none
-    };
-    none.addEventListener('click', function () {
-        select(nothing);
-    });
-    options.appendChild(none);
+	var opts = [];
+	var selecting = false;
+	var visibleCount = 0;
+	var highlightIndex = 0;
+	var highlighted = null;
+	var selected = null;
+	var delayTimer;
 
-    settings.options.forEach(function (option) {
-        var div = document.createElement('div');
-        div.innerHTML = option[settings.label];
-        div.className = 'option';
-        var opt = {
-            obj: option,
-            div: div
-        };
-        div.addEventListener('click', function () {
-            select(opt);
-        });
-        options.appendChild(div);
-        opts.push(opt);
-        if ( option === settings.selected ) {
-            setSelection(opt);
-        }
-    });
+	var none = document.createElement('div');
+	none.innerHTML = '- No Selection -';
+	none.className = 'option disabled';
+	var nothing = {
+		obj: null,
+		div: none
+	};
+	none.addEventListener('click', function () {
+		select(nothing);
+	});
+	options.appendChild(none);
 
-    var empty = document.createElement('div');
-    empty.innerHTML = '- No Results -';
-    empty.className = 'option disabled';
-    empty.style.display = 'none';
-    empty.style.cursor = 'default';
-    options.appendChild(empty);
+	if(settings.remote !== undefined){
+		settings.remote.url = settings.remote.url || '/';
+		settings.remote.url = (settings.remote.url.indexOf('?') >= 0) ? settings.remote.url : settings.remote.url + '?' ;
+		settings.remote.q = settings.remote.q || 'q';
+	}
 
-    field.addEventListener('blur', function () {
-        if (!selecting) {
-            hide();
-            setSelection(selected);
-        }
-    });
+	if(settings.options !== undefined && settings.options.length) settings.options.forEach(prepareOption);
 
-    options.addEventListener('mousedown', function () { selecting = true; });
+	var empty = document.createElement('div');
+	empty.innerHTML = '- No Results -';
+	empty.className = 'option disabled';
+	empty.style.display = 'none';
+	empty.style.cursor = 'default';
+	options.appendChild(empty);
 
-    options.addEventListener('mouseup', function () { selecting = false; });
+	field.addEventListener('blur', function () {
+		if (!selecting) {
+			hide();
+			setSelection(selected);
+		}
+	});
 
-    field.addEventListener('keyup', function (e) {
-        if ( e.keyCode === 13 ) {
-            if ( options.style.display === 'block' ) select(highlighted);
-        } else if ( e.keyCode === 27 ) {
-            setSelection(selected);
-            hide();
-        } else if ( e.keyCode === 38 ) {
-            if ( highlightIndex > 0 ) highlightIndex--;
-            show();
-            if ( highlighted && highlighted.div.offsetTop - options.scrollTop < options.clientHeight / 4 ) {
-                options.scrollTop = highlighted.div.offsetTop - options.clientHeight / 4;
-            }
-        } else if ( e.keyCode === 40 ) {
-            if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
-            show();
-            if ( highlighted && highlighted.div.offsetTop > options.clientHeight * 3 / 4 ) {
-                options.scrollTop = highlighted.div.offsetTop - options.clientHeight * 3 / 4;
-            }
-        } else if ( e.keyCode !== 9 ) {
-            highlightIndex = 0;
-            show();
-        }
-    });
+	options.addEventListener('mousedown', function () { selecting = true; });
 
-    function show () { options.style.display = 'block'; render();  }
+	options.addEventListener('mouseup', function () { selecting = false; });
 
-    function hide () { options.style.display = 'none'; }
+	field.addEventListener('keyup', onKeyUp);
 
-    function render () {
-        visibleCount = 0;
+	function prepareOption(option){
+		var div = document.createElement('div');
+		div.innerHTML = option[settings.label];
+		div.className = 'option';
+		var opt = {
+			obj: option,
+			div: div
+		};
+		div.addEventListener('click', function () {
+			select(opt);
+		});
+		options.appendChild(div);
+		opts.push(opt);
+		if ( JSON.stringify(option) === JSON.stringify(settings.selected) ) {
+			setSelection(opt);
+		}
+	}
 
-        removeClass(none, 'highlight');
-        if ( field.value === '' ) {
-            none.style.display = 'block';
-            if ( visibleCount++ === highlightIndex ) {
-                addClass(none, 'highlight');
-                highlighted = nothing;
-            }
-        } else {
-            none.style.display = 'none';
-        }
+	function onKeyUp(e){
+		switch(e.keyCode){
+			case 13: // enter
+				if ( options.style.display === 'block' ) select(highlighted);
+				break;
+			case 27: // esc
+				setSelection(selected);
+				hide();
+				break;
+			case 38: // up arrow
+				if ( highlightIndex > 0 ) highlightIndex--;
+				break;
+			case 40: // down arrow
+				if ( highlightIndex < visibleCount - 1 ) highlightIndex++;
+				break;
+			default:
+				if ( e.keyCode === 8 || e.keyCode === 32 || e.keyCode > 46 ) {
+					highlightIndex = 0;
+					show();
+				}
+				break;
+		}
+	}
 
-        var regexes = [];
-        field.value.split(' ').forEach(function (word) {
-            var alphanumeric = word.match(/[0-9a-z]/gi);
-            if (alphanumeric) regexes.push(new RegExp(alphanumeric.join('.*'), 'i'));
-        });
+	function performSearch(callback) {
+		if(settings.remote !== undefined){
+			performRemoteSearch(callback);
+		}else{
+			callback();
+		}
+	}
 
-        opts.forEach(function (opt) {
-            removeClass(opt.div, 'highlight');
-            if (
-                regexes.every(function (regex) {
-                    return regex.test(opt.obj[settings.label]);
-                })
-            ) {
-                opt.div.style.display = 'block';
-                if ( visibleCount++ === highlightIndex ) {
-                    addClass(opt.div, 'highlight');
-                    highlighted = opt;
-                }
-            } else {
-                opt.div.style.display = 'none';
-            }
-        });
+	var request = new XMLHttpRequest();
 
-        empty.style.display = ( visibleCount === 0 ) ? 'block' :'none';
+	function performRemoteSearch(callback){
+		request.abort();
 
-        if (settings.up) {
-            options.style.top = '-' + ( options.clientHeight + 3 ) + 'px';
-        } else {
-            options.style.top = ( field.clientHeight + 1 ) + 'px';
-        }
-    }
+		request.open('GET', settings.remote.url + '&' + settings.remote.q + '=' + field.value, true);
 
-    function setSelection (selection) {
-        selected = selection;
-        field.value = (selected && selected.obj) ? selected.obj[settings.label] : '';
-    }
+		if(settings.remote.headers !== undefined && settings.remote.headers.length){
+			settings.remote.headers.forEach(function(el){
+				for(var prop in el){
+					request.setRequestHeader(prop, el[prop]);
+				}
+			});
+		}
 
-    function select (selection) {
-        setSelection(selection);
-        if (settings.onSelect) settings.onSelect(selection.obj);
-        hide();
-    }
+		request.onload = function() {
+			if (request.status >= 200 && request.status < 400) {
+				var data = JSON.parse(request.responseText);
 
-    function unique (classes) {
-        var newClasses = [];
-        classes.forEach(function (oldVal) {
-            if (
-                oldVal !== '' &&
-                !newClasses.some(function (newVal) { return newVal === oldVal; })
-            ) {
-                newClasses.push(oldVal);
-            }
-        });
-        return newClasses;
-    }
+				data.forEach(prepareOption);
 
-    function addClass (element, clazz) {
-        var classes = element.className.split(' ');
-        classes.push(clazz);
-        element.className = unique(classes).join(' ');
-    }
+				callback();
+			} else {
+				console.error('Connection error.');
+			}
+		};
 
-    function removeClass (element, clazz) {
-        var oldClassNames = element.className.split(' ');
-        var newClassNames = [];
-        oldClassNames.forEach(function (oldClassName) {
-            if ( oldClassName !== clazz ) newClassNames.push(oldClassName);
-        });
-        element.className = newClassNames.join(' ');
-    }
+		request.onerror = function() {
+			console.error('Connection error.');
+		};
+
+		request.send();
+	}
+
+	function show () {
+		resetOptionsList();
+
+		if(field.value.length >= settings.min){
+			options.style.display = 'block';
+
+			clearTimeout(delayTimer);
+
+			delayTimer = setTimeout(function() {
+				performSearch(render);
+			}, settings.delay);
+		}else{
+			hide();
+		}
+	}
+
+	function hide () { options.style.display = 'none'; }
+
+	function render () {
+		visibleCount = 0;
+
+		empty.style.display = 'none';
+
+		removeClass(none, 'highlight');
+		if ( field.value === '' ) {
+			none.style.display = 'block';
+			if ( visibleCount++ === highlightIndex ) {
+				addClass(none, 'highlight');
+				highlighted = nothing;
+			}
+		} else {
+			none.style.display = 'none';
+		}
+
+		var rgx = new RegExp(field.value, 'i');
+
+		opts.forEach(function (opt) {
+			removeClass(opt.div, 'highlight');
+			if (settings.highlight) opt = unHighlightSubstring(opt);
+			if (
+				//opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
+				rgx.test(opt.obj[settings.label])
+			) {
+				if (settings.highlight) opt = highlightSubstring(opt, field.value);
+				opt.div.style.display = 'block';
+				if ( visibleCount++ === highlightIndex ) {
+					addClass(opt.div, 'highlight');
+					highlighted = opt;
+				}
+			} else {
+				opt.div.style.display = 'none';
+			}
+		});
+
+		empty.style.display = ( visibleCount === 0 ) ? 'block' : 'none';
+
+		if (settings.up) {
+			options.style.top = '-' + ( options.clientHeight + 3 ) + 'px';
+		} else {
+			options.style.top = ( field.clientHeight + 1 ) + 'px';
+		}
+	}
+
+	function highlightSubstring(o, str){
+		o.div.innerHTML = o.div.innerHTML.replace(new RegExp('(' + str + '+)', 'gi'), '<b>$1</b>');
+		return o;
+	}
+
+	function unHighlightSubstring(o){
+		o.div.innerHTML = o.div.textContent || o.div.innerText || '';
+		return o;
+	}
+
+	function resetOptionsList(){
+		none.style.display = 'none';
+
+		var _opts = [].slice.call(options.getElementsByClassName('option'));
+
+		if(_opts.length > 1){
+			_opts.shift();
+
+			_opts.forEach(function(el, i){
+				el.parentNode.removeChild(el);
+			});
+		}
+	}
+
+	function setSelection (selection) {
+		selected = selection;
+		field.value = (selected && selected.obj) ? selected.obj[settings.label] : '';
+	}
+
+	function select (selection) {
+		setSelection(selection);
+		if (settings.onSelect) settings.onSelect(selection.obj);
+		hide();
+	}
+
+	function addClass (element, clazz) {
+		element.classList.add(clazz);
+	}
+
+	function removeClass (element, clazz) {
+		element.classList.remove(clazz);
+	}
 
 }
