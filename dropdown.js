@@ -38,6 +38,7 @@ function dropdown(settings) {
 
 	if(settings.remote !== undefined){
 		settings.remote.url = settings.remote.url || '/';
+		settings.remote.url = (settings.remote.url.indexOf('?') >= 0) ? settings.remote.url : settings.remote.url + '?' ;
 		settings.remote.q = settings.remote.q || 'q';
 	}
 
@@ -107,7 +108,6 @@ function dropdown(settings) {
 
 	function performSearch(callback) {
 		if(settings.remote !== undefined){
-			resetOptionsList();
 			performRemoteSearch(callback);
 		}else{
 			callback();
@@ -119,7 +119,15 @@ function dropdown(settings) {
 	function performRemoteSearch(callback){
 		request.abort();
 
-		request.open('GET', settings.remote.url + '?' + settings.remote.q + '=' + field.value.toLowerCase(), true);
+		request.open('GET', settings.remote.url + '&' + settings.remote.q + '=' + field.value, true);
+
+		if(settings.remote.headers !== undefined && settings.remote.headers.length){
+			settings.remote.headers.forEach(function(el){
+				for(var prop in el){
+					request.setRequestHeader(prop, el[prop]);
+				}
+			});
+		}
 
 		request.onload = function() {
 			if (request.status >= 200 && request.status < 400) {
@@ -141,6 +149,8 @@ function dropdown(settings) {
 	}
 
 	function show () {
+		resetOptionsList();
+
 		if(field.value.length >= settings.min){
 			options.style.display = 'block';
 
@@ -159,6 +169,8 @@ function dropdown(settings) {
 	function render () {
 		visibleCount = 0;
 
+		empty.style.display = 'none';
+
 		removeClass(none, 'highlight');
 		if ( field.value === '' ) {
 			none.style.display = 'block';
@@ -170,11 +182,14 @@ function dropdown(settings) {
 			none.style.display = 'none';
 		}
 
+		var rgx = new RegExp(field.value, 'i');
+
 		opts.forEach(function (opt) {
 			removeClass(opt.div, 'highlight');
 			if (settings.highlight) opt = unHighlightSubstring(opt);
 			if (
-				opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
+				//opt.obj[settings.label].toLowerCase().indexOf(field.value.toLowerCase()) > -1
+				rgx.test(opt.obj[settings.label])
 			) {
 				if (settings.highlight) opt = highlightSubstring(opt, field.value);
 				opt.div.style.display = 'block';
@@ -187,7 +202,7 @@ function dropdown(settings) {
 			}
 		});
 
-		empty.style.display = ( visibleCount === 0 ) ? 'block' :'none';
+		empty.style.display = ( visibleCount === 0 ) ? 'block' : 'none';
 
 		if (settings.up) {
 			options.style.top = '-' + ( options.clientHeight + 3 ) + 'px';
@@ -207,6 +222,8 @@ function dropdown(settings) {
 	}
 
 	function resetOptionsList(){
+		none.style.display = 'none';
+
 		var _opts = [].slice.call(options.getElementsByClassName('option'));
 
 		if(_opts.length > 1){
