@@ -39,6 +39,7 @@ you may be using.
         options: myOptions,                // An array of selectable objects
         selected: myOptions[6],            // One of those object to be initially selected
         label: 'name',                     // Which option field to show and filter on
+        classname: 'field',                // Class name to add to search input
         up: false,                         // Whether to drop up or down
         onSelect: function (selection) {}  // A callback
     });
@@ -58,6 +59,21 @@ or `string` of the `id` of an `HTMLElement`. You cannot pass a jQuery object her
 objects are array-like objects and not actual elements. You would want to do some like this
 `dropdown({ container: $('#myDropdown')[0], ... });`.
 
+### `placeholder | optional | string`
+
+Placeholder to add to searchi field input.
+Default value: `Type to filter...`
+
+### `highlight | optional | boolean`
+
+Highlight (or not) found substring in resultset
+Default value: `false`
+
+### `min | optional | integer`
+
+Minimum length of string to start search
+Default value: `1`
+
 ### `options | required | Object[]`
 
 An `Array` of JavaScript objects. Can hold or reference any values that you would like,
@@ -76,6 +92,10 @@ as the one in the `options`; no deep/shallow value comparison is performed. Defa
 This is the name of the key in each of the `options` that holds the `string` that will be
 shown to the user and filtered on.
 
+### `classname | optional | string`
+
+The class name to add to search field input. Default value: `field`
+
 ### `up | optional | boolean`
 
 A `boolean` choosing whether to drop up or not. If `true` the options will be rendered above
@@ -84,7 +104,8 @@ page/screen. Default value: `false`
 
 ### `onSelect | optional | Function`
 
-A `function` to be called every time the user makes a selection. The function will be passed a
+A `function` to be called every time the user makes a selection.  
+The function will be passed a
 single argument equal to the object that was selected. This will be the actual object, not
 a copy or a key or the name/label that the user sees. In this way, you may pass any data
 (even functions) into this callback by attaching it to the option itself. Technically, it is
